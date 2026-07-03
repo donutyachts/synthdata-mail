@@ -1,0 +1,26 @@
+{
+  "persona": {
+    "business_name": "Test Corp"
+  },
+  "contacts": [
+    {
+      "contact_id": "c1",
+      "full_name": "Alice",
+      "email": "not-an-email",
+      "role": "client"
+    }
+  ],
+  "emails": [
+    {
+      "email_id": "e1",
+      "folder": "invalid_folder",
+      "contact_id": "c1",
+      "direction": "incoming",
+      "subject": "Test",
+      "body": "Test",
+      "timestamp": "2026-06-01T10:00:00Z",
+      "read": "not-a-bool"
+    }
+  ],
+  "events": []
+}

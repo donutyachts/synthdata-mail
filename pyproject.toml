@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "synthdata-mail"
+version = "0.1.0"
+description = "Populate IMAP mailboxes with synthetic demo data"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "imap-tools>=1.6",
+    "vobject>=0.9",
+    "icalendar>=5.0",
+    "jsonschema>=4.20",
+]
+
+[project.scripts]
+synthdata-mail = "synthdata_mail.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["synthdata_mail*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.0",
+]

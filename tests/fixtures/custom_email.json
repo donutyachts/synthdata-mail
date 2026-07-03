@@ -1,0 +1,6 @@
+{
+  "subject": "Welcome to Acme Corp Demo",
+  "from_name": "Acme Demo Team",
+  "from_email": "demo@acme.com",
+  "html_file": "welcome.html"
+}

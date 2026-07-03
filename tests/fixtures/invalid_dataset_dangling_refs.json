@@ -1,0 +1,47 @@
+{
+  "persona": {
+    "business_name": "Test Corp",
+    "business_type": "Testing"
+  },
+  "contacts": [
+    {
+      "contact_id": "c1",
+      "full_name": "Alice Smith",
+      "email": "alice@example.com",
+      "role": "client"
+    }
+  ],
+  "emails": [
+    {
+      "email_id": "e1",
+      "folder": "inbox",
+      "contact_id": "c-does-not-exist",
+      "direction": "incoming",
+      "subject": "Test",
+      "body": "Test body",
+      "timestamp": "2026-06-01T10:00:00Z",
+      "read": false
+    },
+    {
+      "email_id": "e2",
+      "folder": "sent",
+      "contact_id": "c1",
+      "direction": "outgoing",
+      "subject": "Reply",
+      "body": "Reply body",
+      "timestamp": "2026-06-02T10:00:00Z",
+      "read": true,
+      "in_reply_to_email_id": "e-does-not-exist"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "ev1",
+      "title": "Meeting",
+      "start": "2026-07-01T10:00:00Z",
+      "end": "2026-07-01T11:00:00Z",
+      "attendee_contact_ids": ["c1", "c-also-missing"],
+      "related_email_thread_id": "thread-does-not-exist"
+    }
+  ]
+}

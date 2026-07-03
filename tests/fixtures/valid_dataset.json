@@ -1,0 +1,92 @@
+{
+  "persona": {
+    "business_name": "Acme Corp",
+    "business_type": "Software"
+  },
+  "contacts": [
+    {
+      "contact_id": "c1",
+      "full_name": "Alice Smith",
+      "email": "alice@example.com",
+      "company": "Acme Corp",
+      "role": "client",
+      "phone": "+1-555-0101"
+    },
+    {
+      "contact_id": "c2",
+      "full_name": "Bob Jones",
+      "email": "bob@vendor.com",
+      "company": "Vendor Inc",
+      "role": "vendor"
+    },
+    {
+      "contact_id": "c3",
+      "full_name": "Carol White",
+      "email": "carol@partner.com",
+      "role": "partner"
+    }
+  ],
+  "emails": [
+    {
+      "email_id": "e1",
+      "folder": "inbox",
+      "contact_id": "c1",
+      "direction": "incoming",
+      "subject": "Project kickoff meeting",
+      "body": "Hi, I wanted to confirm the kickoff meeting for next Monday.",
+      "timestamp": "2026-06-01T10:00:00Z",
+      "read": true,
+      "thread_id": "thread-1"
+    },
+    {
+      "email_id": "e2",
+      "folder": "sent",
+      "contact_id": "c1",
+      "direction": "outgoing",
+      "subject": "Re: Project kickoff meeting",
+      "body": "Confirmed! Looking forward to it.",
+      "timestamp": "2026-06-01T11:00:00Z",
+      "read": true,
+      "thread_id": "thread-1",
+      "in_reply_to_email_id": "e1"
+    },
+    {
+      "email_id": "e3",
+      "folder": "inbox",
+      "contact_id": "c2",
+      "direction": "incoming",
+      "subject": "Invoice #1234",
+      "body": "Please find attached invoice #1234 for services rendered.",
+      "timestamp": "2026-06-10T09:00:00Z",
+      "read": false
+    },
+    {
+      "email_id": "e4",
+      "folder": "drafts",
+      "contact_id": "c3",
+      "direction": "outgoing",
+      "subject": "Partnership proposal",
+      "body": "Dear Carol, I wanted to discuss a potential partnership opportunity.",
+      "timestamp": "2026-06-15T14:00:00Z",
+      "read": false
+    }
+  ],
+  "events": [
+    {
+      "event_id": "ev1",
+      "title": "Project Kickoff Meeting",
+      "description": "Initial kickoff for the Q3 project.",
+      "start": "2026-07-07T14:00:00Z",
+      "end": "2026-07-07T15:00:00Z",
+      "attendee_contact_ids": ["c1", "c2"],
+      "related_email_thread_id": "thread-1"
+    },
+    {
+      "event_id": "ev2",
+      "title": "Vendor Review",
+      "start": "2026-06-20T10:00:00Z",
+      "end": "2026-06-20T11:00:00Z",
+      "attendee_contact_ids": ["c2"]
+    }
+  ]
+}
