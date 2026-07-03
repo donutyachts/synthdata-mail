@@ -189,4 +189,3 @@ synthdata-mail/
 ├── README.md                # this file
 └── synthdata-mail-spec.md   # full specification
 ```
->>>>>>> ed6432f (Initial commit)
