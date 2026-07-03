@@ -1,8 +1,4 @@
 # synthdata-mail
-<<<<<<< HEAD
-Mailbox data seeding.
-=======
-
 Populate an empty, IMAP-accessible mailbox with coherent synthetic data — inbox/sent/drafts emails, contacts, and calendar events — for product demos and sandbox environments. Built for the Webmail 8 (WM8) rollout, but works against any standard IMAP mailbox.
 
 Full technical specification: [`synthdata-mail-spec.md`](./synthdata-mail-spec.md). This README covers what the tool does and how to run it; the spec is the authoritative source for behavior, schemas, and design rationale.
