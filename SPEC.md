@@ -222,7 +222,7 @@ Applies to Stage 0 content generation (the prompt template), not the determinist
 ### FR-6: Credential Handling (cross-cutting, applies to `seed` and `reset`)
 
 - Password is never accepted as a CLI argument.
-- Accepted via either: (a) interactive prompt (hidden input, not echoed to terminal), or (b) a credentials file at a fixed, restricted-permission path (mode `600`), read once per invocation. Format: flat `key=value` (`server=...`, `username=...`, `password=...`).
+- Accepted via either: (a) interactive prompt (hidden input, not echoed to terminal), or (b) a credentials file at an operator-specified path (passed via `--creds-file`), enforced mode `600`, read once per invocation. Format: flat `key=value` (`server=...`, `username=...`, `password=...`). Recommended placement is a `*.creds` file in the project directory, which is covered by the repo's `.gitignore`.
 - Server host and username may be passed as CLI arguments (not secret) or included in the credentials file.
 - Full detail and rationale in §4.
 
@@ -244,7 +244,7 @@ This is a correctness requirement, not a performance optimization — target mai
 ### NFR-2: Credential Security
 
 - IMAP password is never accepted as a CLI argument (visible in shell history and process listings via `ps`).
-- Accepted via interactive hidden-input prompt, or a credentials file (flat `key=value` format) at a fixed path with enforced `600` permissions — the tool checks the file's permission bits at read time and refuses to proceed (with a clear error) if the file is more permissive than `600`.
+- Accepted via interactive hidden-input prompt, or a credentials file (flat `key=value` format) at an operator-specified path (via `--creds-file`) with enforced `600` permissions — the tool checks the file's permission bits at read time and refuses to proceed (with a clear error) if the file is more permissive than `600`.
 - Password is held in memory only for the duration of the IMAP session and is never written to disk, logged, or included in error messages/stack traces.
 - **Platform caveat**: the `600`-permissions check assumes POSIX file permissions. Windows support requires separate design (see §9).
 

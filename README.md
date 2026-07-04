@@ -1,7 +1,7 @@
 # synthdata-mail
 Populate an empty, IMAP-accessible mailbox with coherent synthetic data — inbox/sent/drafts emails, contacts, and calendar events — for product demos and sandbox environments. Built for the Webmail 8 (WM8) rollout, but works against any standard IMAP mailbox.
 
-Full technical specification: [`synthdata-mail-spec.md`](./synthdata-mail-spec.md). This README covers what the tool does and how to run it; the spec is the authoritative source for behavior, schemas, and design rationale.
+Full technical specification: [`SPEC.md`](./SPEC.md). This README covers what the tool does and how to run it; the spec is the authoritative source for behavior, schemas, and design rationale.
 
 ## Why this exists
 
@@ -27,38 +27,33 @@ Why the split: WM8 (and most webmail products) don't expose a bulk-import API fo
 ```bash
 git clone <repo-url>
 cd synthdata-mail
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -e .
 ```
 
-`requirements.txt`:
-```
-imap_tools
-vobject
-icalendar
-jsonschema
-click
-```
+This installs the `synthdata-mail` CLI command into your virtual environment.
 
 ### Credentials file (recommended over interactive prompts for repeated use)
 
-Create a file with restricted permissions:
+The recommended approach is a `mailbox.creds` file in the project directory — it is already covered by the `.gitignore` pattern `*.creds` so it will never be accidentally committed.
 
 ```bash
-touch ~/.synthdata-mail-creds
-chmod 600 ~/.synthdata-mail-creds
+touch mailbox.creds
+chmod 600 mailbox.creds
 ```
 
 Contents (flat `key=value`, one per line):
 
 ```
-server=sync.megamailservers.com
+server=mail.example.com
 username=demo@clientdomain.com
 password=the-mailbox-password
 ```
 
-The tool refuses to read this file if its permissions are looser than `600` — this is intentional (see spec §4, NFR-2), not a bug. If you'd rather not manage a file, omit `--creds-file` and the tool will prompt you interactively with hidden input instead.
+Alternatively, place the file anywhere and pass its path via `--creds-file`. The tool refuses to read any credentials file whose permissions are looser than `600` — this is intentional (see spec §4, NFR-2), not a bug.
+
+If you'd rather not manage a file at all, omit `--creds-file` and the tool will prompt for the password interactively with hidden input.
 
 **Never pass the password as a command-line flag.** There isn't one — this is deliberate (spec §6.1) since CLI arguments are visible in shell history and process listings.
 
@@ -75,7 +70,7 @@ Save the output as `dataset.json`.
 ### 2. Validate it
 
 ```bash
-python -m synthdata_mail validate --dataset dataset.json
+synthdata-mail validate --dataset dataset.json
 ```
 
 Catches schema errors and dangling references (e.g., an email pointing to a contact that doesn't exist) before anything gets written or sent anywhere.
@@ -83,7 +78,7 @@ Catches schema errors and dangling references (e.g., an email pointing to a cont
 ### 3. Generate contacts and calendar files
 
 ```bash
-python -m synthdata_mail generate --dataset dataset.json --output-dir ./output/
+synthdata-mail generate --dataset dataset.json --output-dir ./output/
 ```
 
 Produces `output/contacts.vcf` and `output/events.ics`. Import both into the target webmail through its own UI (bulk import / add account features — see that product's documentation).
@@ -91,66 +86,58 @@ Produces `output/contacts.vcf` and `output/events.ics`. Import both into the tar
 ### 4. Seed the mailbox
 
 ```bash
-python -m synthdata_mail seed \
+synthdata-mail seed \
   --dataset dataset.json \
-  --server sync.megamailservers.com \
-  --username demo@clientdomain.com \
-  --creds-file ~/.synthdata-mail-creds
+  --creds-file mailbox.creds
 ```
 
-This connects over IMAP and appends every email in the dataset to the correct folder (inbox/sent/drafts) with realistic timestamps and read/unread state — throttled deliberately (see "A note on speed" below). Prints a `batch-id` at the end; **save this** if you plan to reset later.
+This connects over IMAP and appends every email in the dataset to the correct folder (inbox/sent/drafts) with realistic timestamps and read/unread state — throttled deliberately (see "A note on speed" below). The batch ID is printed at the start; **save it** if you plan to reset later. It is also recorded in `history.jsonl`.
 
 **Optional: add a custom welcome email** that appears as the newest, unread item in the inbox:
 
 ```bash
-python -m synthdata_mail seed \
+synthdata-mail seed \
   --dataset dataset.json \
-  --server sync.megamailservers.com \
-  --username demo@clientdomain.com \
-  --creds-file ~/.synthdata-mail-creds \
-  --custom-email welcome-email.json
+  --creds-file mailbox.creds \
+  --custom-email output/welcome-email.json
 ```
 
-`welcome-email.json`:
+`welcome-email.json` (place alongside its HTML file):
 ```json
 {
   "subject": "Welcome to your Webmail 8 demo",
-  "from_name": "Andres Rivera",
-  "from_email": "andres@hostpapa.com",
+  "from_name": "Your Name",
+  "from_email": "you@example.com",
   "html_file": "welcome-body.html"
 }
 ```
 
-`welcome-body.html` is a plain HTML file with the message content. A plain-text fallback is generated automatically.
+`welcome-body.html` is a plain HTML file with the message content. A plain-text fallback is derived automatically by stripping HTML tags.
 
 ### 5. Check what you've run
 
 ```bash
-python -m synthdata_mail history
-python -m synthdata_mail history --mailbox demo@clientdomain.com
+synthdata-mail history
+synthdata-mail history --mailbox demo@clientdomain.com
 ```
 
-Shows every past seed/reset run — timestamp, mailbox, batch-id, counts, status. Use this to find a `batch-id` if you didn't save it from step 4.
+Shows every past seed/reset run — timestamp, mailbox, batch-id, counts, status. Use this to find a `batch-id` if you didn't record it from step 4.
 
 ### 6. Reset a mailbox
 
 Remove only what this tool added (recommended — leaves anything else in the account untouched):
 
 ```bash
-python -m synthdata_mail reset \
-  --server sync.megamailservers.com \
-  --username demo@clientdomain.com \
-  --creds-file ~/.synthdata-mail-creds \
+synthdata-mail reset \
+  --creds-file mailbox.creds \
   --batch-id <batch-id-from-seed-or-history>
 ```
 
 Or wipe the mailbox entirely (irreversible — requires typed confirmation):
 
 ```bash
-python -m synthdata_mail reset \
-  --server sync.megamailservers.com \
-  --username demo@clientdomain.com \
-  --creds-file ~/.synthdata-mail-creds \
+synthdata-mail reset \
+  --creds-file mailbox.creds \
   --wipe-all
 ```
 
@@ -174,18 +161,31 @@ Full list with rationale: spec §9 (Out of Scope).
 - **"Credentials file permissions rejected"** — run `chmod 600 <path>` on your credentials file.
 - **"Folder not found" during seed** — the tool looks for Sent/Drafts via standard IMAP conventions first, then common literal names. If your target server uses a different sent/drafts naming convention, check its actual folder list (any IMAP-capable mail client will show this) and let the maintainer know — this may need a config addition.
 - **Seed reports partial success** — some messages succeeded, some didn't (connection hiccup, server rejection). Check the printed per-message failure details; already-succeeded messages remain in the mailbox, nothing is rolled back automatically.
+- **Connection reset immediately after TLS handshake** — the target server may restrict IMAP access by IP. Ensure you're connecting from a network that has access to the mail server (VPN, internal network, etc.).
 - **Want to redo a demo from scratch** — `reset --batch-id <id>` then `seed` again with a fresh (or the same) `dataset.json`.
 
-## Project structure (suggested)
+## Project structure
 
 ```
 synthdata-mail/
 ├── synthdata_mail/          # tool source
+│   ├── cli.py               # Click entry point — five subcommands
+│   ├── validator.py         # JSON Schema + referential integrity checks
+│   ├── generator.py         # vCard and iCalendar writers
+│   ├── imap_client.py       # throttled IMAP APPEND / custom email
+│   ├── reset_client.py      # IMAP SEARCH + UID EXPUNGE
+│   ├── history.py           # append-only JSONL run log
+│   ├── credentials.py       # secure credential loading
+│   └── schema.py            # JSON Schema definitions
 ├── prompts/
 │   └── generate-dataset.md  # Stage 0 prompt template for Claude Code/Cowork
-├── test/
-│   └── fixtures/            # sample dataset.json files, valid and invalid
-├── requirements.txt
-├── README.md                # this file
-└── synthdata-mail-spec.md   # full specification
+├── tests/
+│   └── fixtures/            # valid and invalid dataset.json fixtures
+├── output/                  # generated contacts.vcf, events.ics, welcome email
+├── pyproject.toml
+├── mailbox.creds            # gitignored — your IMAP credentials
+├── dataset.json             # gitignored — generated synthetic dataset
+├── history.jsonl            # gitignored — append-only run log
+├── README.md
+└── SPEC.md                  # full specification
 ```

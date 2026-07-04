@@ -8,3 +8,4 @@ build/
 output/
 history.jsonl
 *.creds
+dataset.json
