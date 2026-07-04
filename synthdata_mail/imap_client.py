@@ -163,7 +163,7 @@ class ThrottledMailbox:
         for attempt in range(max_retries + 1):
             try:
                 self._throttle()
-                self._mb.append(folder, message_bytes, dt=dt, flag_set=list(flags))
+                self._mb.append(message_bytes, folder, dt=dt, flag_set=list(flags))
                 return True
             except (imap_tools.errors.ImapToolsError, OSError) as e:
                 err_str = str(e)
