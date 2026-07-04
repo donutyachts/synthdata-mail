@@ -31,6 +31,87 @@ def _strip_html(html_content: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
+def _text_to_html(text: str) -> str:
+    """Convert plain text body to HTML paragraphs."""
+    escaped = html.escape(text)
+    paragraphs = re.split(r"\n{2,}", escaped.strip())
+    parts = []
+    for para in paragraphs:
+        lines = para.replace("\n", "<br>\n")
+        parts.append(f"<p>{lines}</p>")
+    return "\n".join(parts)
+
+
+def _contact_signature_html(contact: dict) -> str:
+    lines = [f"<strong>{html.escape(contact['full_name'])}</strong>"]
+    if contact.get("role"):
+        lines.append(html.escape(contact["role"]))
+    if contact.get("company"):
+        lines.append(html.escape(contact["company"]))
+    if contact.get("email"):
+        e = html.escape(contact["email"])
+        lines.append(f'<a href="mailto:{e}">{e}</a>')
+    if contact.get("phone"):
+        lines.append(html.escape(contact["phone"]))
+    return "<br>\n".join(lines)
+
+
+def _contact_signature_text(contact: dict) -> str:
+    parts = [contact["full_name"]]
+    if contact.get("role"):
+        parts.append(contact["role"])
+    if contact.get("company"):
+        parts.append(contact["company"])
+    if contact.get("email"):
+        parts.append(contact["email"])
+    if contact.get("phone"):
+        parts.append(contact["phone"])
+    return "\n".join(parts)
+
+
+def _persona_signature_html(persona: dict) -> str:
+    name = html.escape(persona.get("business_name", ""))
+    btype = html.escape(persona.get("business_type", ""))
+    if btype:
+        return f"<strong>{name}</strong><br>\n{btype}"
+    return f"<strong>{name}</strong>"
+
+
+def _persona_signature_text(persona: dict) -> str:
+    parts = [persona.get("business_name", "")]
+    if persona.get("business_type"):
+        parts.append(persona["business_type"])
+    return "\n".join(parts)
+
+
+_HTML_TEMPLATE = """\
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: Georgia, serif; font-size: 15px; line-height: 1.6;
+         color: #222; margin: 0; padding: 0; background: #f5f5f5; }}
+  .wrapper {{ max-width: 640px; margin: 0 auto; background: #fff;
+              padding: 32px 36px; }}
+  p {{ margin: 0 0 1em 0; }}
+  .sig {{ margin-top: 2em; padding-top: 1em; border-top: 1px solid #ddd;
+          font-size: 13px; color: #555; line-height: 1.5; }}
+  .sig a {{ color: #555; text-decoration: none; }}
+</style>
+</head>
+<body>
+<div class="wrapper">
+{body}
+<div class="sig">
+{sig}
+</div>
+</div>
+</body>
+</html>
+"""
+
+
 def _resolve_folder(mailbox: imap_tools.MailBox, target: str) -> str:
     """Resolve logical folder name to server folder name."""
     if target == "inbox":
@@ -70,18 +151,27 @@ def _build_message(
     contact_map: dict,
     batch_id: str,
     message_id_map: dict,
+    persona: dict,
 ) -> bytes:
     contact = contact_map[email_data["contact_id"]]
     direction = email_data["direction"]
 
     if direction == "incoming":
         from_addr = formataddr((contact["full_name"], contact["email"]))
-        to_addr = ""  # mailbox owner — unknown, use placeholder
+        to_addr = ""
+        sig_html = _contact_signature_html(contact)
+        sig_text = _contact_signature_text(contact)
     else:
-        from_addr = ""  # mailbox owner
+        from_addr = ""
         to_addr = formataddr((contact["full_name"], contact["email"]))
+        sig_html = _persona_signature_html(persona)
+        sig_text = _persona_signature_text(persona)
 
-    msg = MIMEText(email_data["body"], "plain", "utf-8")
+    body_html = _text_to_html(email_data["body"])
+    html_content = _HTML_TEMPLATE.format(body=body_html, sig=sig_html)
+    plain_content = email_data["body"] + "\n\n--\n" + sig_text
+
+    msg = MIMEMultipart("alternative")
     msg["Subject"] = email_data["subject"]
     msg["From"] = from_addr or "Demo User <demo@example.com>"
     msg["To"] = to_addr or "Demo User <demo@example.com>"
@@ -89,12 +179,10 @@ def _build_message(
         _parse_dt(email_data["timestamp"]).timestamp(), localtime=False
     )
 
-    # Stable Message-ID from email_id
     msg_id = f"<{email_data['email_id']}@synthdata-mail>"
     msg["Message-ID"] = msg_id
     message_id_map[email_data["email_id"]] = msg_id
 
-    # Threading headers
     if email_data.get("thread_id"):
         msg["X-Thread-ID"] = email_data["thread_id"]
 
@@ -107,6 +195,10 @@ def _build_message(
         msg["References"] = parent_msg_id
 
     msg["X-WM8-Seed-Batch"] = batch_id
+
+    msg.attach(MIMEText(plain_content, "plain", "utf-8"))
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+
     return msg.as_bytes()
 
 
@@ -193,6 +285,7 @@ def seed_mailbox(
     """Seed the mailbox. Returns (succeeded, failed, failure_reasons)."""
     contact_map = {c["contact_id"]: c for c in dataset["contacts"]}
     emails = dataset["emails"]
+    persona = dataset.get("persona", {})
 
     succeeded = 0
     failed = 0
@@ -214,7 +307,7 @@ def seed_mailbox(
         for idx, email_data in enumerate(emails):
             try:
                 folder_name = resolve(email_data["folder"])
-                msg_bytes = _build_message(email_data, contact_map, batch_id, message_id_map)
+                msg_bytes = _build_message(email_data, contact_map, batch_id, message_id_map, persona)
                 dt = _parse_dt(email_data["timestamp"])
                 flags = ("\\Seen",) if email_data.get("read") else ()
                 throttled.append(folder_name, msg_bytes, dt, flags)

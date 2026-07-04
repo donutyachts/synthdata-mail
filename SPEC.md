@@ -163,7 +163,9 @@ Applies to Stage 0 content generation (the prompt template), not the determinist
 1. Runs FR-1 validation first; aborts on failure.
 2. Opens one IMAP connection (SSL/TLS). No parallel connections.
 3. For each email in `dataset.json.emails[]`, in the order listed:
-   - Constructs an RFC 822 message (From/To resolved from `contact_id` via `contacts[]`, subject, body, threading headers if present in the dataset).
+   - Constructs an RFC 822 `multipart/alternative` message (From/To resolved from `contact_id` via `contacts[]`, subject, threading headers if present in the dataset). Both parts are generated from the dataset's `body` field:
+     - **HTML part**: the body text is wrapped in a minimal HTML email template and followed by a signature block. For `incoming` messages the signature is derived from the contact's `full_name`, `company`, `role`, `email`, and `phone` fields. For `outgoing` messages the signature uses the dataset's `persona.business_name` and `persona.business_type`.
+     - **Plain-text part**: the unmodified body text followed by a text-formatted version of the same signature, separated by `--`.
    - Sets internal date from the dataset's specified timestamp; sets `\Seen` flag per the dataset's `read` boolean.
    - Tags the message with header `X-WM8-Seed-Batch: <batch-id>`.
    - `APPEND`s to the folder specified per-message (`inbox` | `sent` | `drafts`), resolved per §6.2's folder-targeting contract.

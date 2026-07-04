@@ -47,25 +47,34 @@ class TestBuildMessage:
     def setup_method(self):
         self.data = load_valid()
         self.contact_map = make_contact_map(self.data["contacts"])
+        self.persona = self.data["persona"]
         self.batch_id = "test-batch-123"
         self.mid_map: dict = {}
 
     def _parse(self, email_data: dict) -> email.message.Message:
-        raw = _build_message(email_data, self.contact_map, self.batch_id, self.mid_map)
+        raw = _build_message(email_data, self.contact_map, self.batch_id, self.mid_map, self.persona)
         return email.message_from_bytes(raw)
+
+    def test_multipart_alternative(self):
+        msg = self._parse(self.data["emails"][0])
+        assert msg.get_content_type() == "multipart/alternative"
+
+    def test_has_html_and_plain_parts(self):
+        msg = self._parse(self.data["emails"][0])
+        content_types = {part.get_content_type() for part in msg.get_payload()}
+        assert "text/plain" in content_types
+        assert "text/html" in content_types
 
     def test_batch_header_present(self):
         msg = self._parse(self.data["emails"][0])
         assert msg["X-WM8-Seed-Batch"] == self.batch_id
 
     def test_incoming_email_sets_from_contact(self):
-        # e1 is incoming from c1 (Alice)
         email_data = next(e for e in self.data["emails"] if e["email_id"] == "e1")
         msg = self._parse(email_data)
         assert "alice@example.com" in msg["From"]
 
     def test_outgoing_email_sets_to_contact(self):
-        # e2 is outgoing to c1 (Alice)
         email_data = next(e for e in self.data["emails"] if e["email_id"] == "e2")
         msg = self._parse(email_data)
         assert "alice@example.com" in msg["To"]
@@ -81,12 +90,11 @@ class TestBuildMessage:
         assert "e1@synthdata-mail" in msg["Message-ID"]
 
     def test_in_reply_to_set(self):
-        # e2 replies to e1 — parse e1 first to populate mid_map
         e1 = next(e for e in self.data["emails"] if e["email_id"] == "e1")
         e2 = next(e for e in self.data["emails"] if e["email_id"] == "e2")
-        _build_message(e1, self.contact_map, self.batch_id, self.mid_map)
+        _build_message(e1, self.contact_map, self.batch_id, self.mid_map, self.persona)
         msg2 = email.message_from_bytes(
-            _build_message(e2, self.contact_map, self.batch_id, self.mid_map)
+            _build_message(e2, self.contact_map, self.batch_id, self.mid_map, self.persona)
         )
         assert "e1@synthdata-mail" in msg2.get("In-Reply-To", "")
 
@@ -94,6 +102,18 @@ class TestBuildMessage:
         email_data = next(e for e in self.data["emails"] if e.get("thread_id"))
         msg = self._parse(email_data)
         assert msg["X-Thread-ID"] == email_data["thread_id"]
+
+    def test_incoming_signature_contains_contact_name(self):
+        email_data = next(e for e in self.data["emails"] if e["email_id"] == "e1")
+        msg = self._parse(email_data)
+        html_part = next(p for p in msg.get_payload() if p.get_content_type() == "text/html")
+        assert "Alice Smith" in html_part.get_payload(decode=True).decode()
+
+    def test_outgoing_signature_contains_persona_name(self):
+        email_data = next(e for e in self.data["emails"] if e["email_id"] == "e2")
+        msg = self._parse(email_data)
+        plain_part = next(p for p in msg.get_payload() if p.get_content_type() == "text/plain")
+        assert "Acme Corp" in plain_part.get_payload(decode=True).decode()
 
 
 class TestBuildCustomMessage:
