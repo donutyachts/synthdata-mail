@@ -122,7 +122,7 @@ def _resolve_folder(mailbox: imap_tools.MailBox, target: str) -> str:
         "drafts": r"\Drafts",
     }
     fallbacks = {
-        "sent": ["Sent", "Sent Items", "Sent Messages"],
+        "sent": ["Sent", "Sent Items", "Sent Messages", "sent-mail"],
         "drafts": ["Drafts"],
     }
 
@@ -138,6 +138,13 @@ def _resolve_folder(mailbox: imap_tools.MailBox, target: str) -> str:
     for name in fallbacks.get(target, []):
         if name in existing_names:
             return name
+
+    # Fallback to case-insensitive leaf match, e.g. "mail/sent-mail" or "INBOX.Drafts"
+    for name in fallbacks.get(target, []):
+        for folder in folders:
+            leaf = folder.name.rsplit(folder.delim, 1)[-1] if folder.delim else folder.name
+            if leaf.lower() == name.lower():
+                return folder.name
 
     raise ValueError(
         f"Could not resolve folder '{target}'. "
