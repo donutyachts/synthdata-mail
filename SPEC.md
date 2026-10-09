@@ -72,7 +72,7 @@ This is a two-part system with a hard boundary between them: an **external, manu
 ### Components
 
 **1. Content Generation (Stage 0, external to this codebase)**
-Not implemented as code. This spec includes a documented prompt template (delivered separately) that the operator runs manually in Claude Code, supplying volume tier and business persona as parameters. Output is a single `dataset.json` file conforming to the schema in §5. This stage is re-run whenever the operator wants a fresh dataset; it has no dependency on the CLI and vice versa.
+Not implemented as code. This spec includes a documented prompt template (delivered separately) that the operator runs manually in Claude Code, supplying volume tier, business persona, and language (`EN`, `ES`, or `FR`) as parameters. Output is a single `dataset.json` file conforming to the schema in §5. This stage is re-run whenever the operator wants a fresh dataset; it has no dependency on the CLI and vice versa.
 
 **2. Schema Validator**
 First stage of the CLI proper. Loads `dataset.json`, validates structure against the JSON Schema (§5), then performs referential integrity checks beyond what JSON Schema alone can express: every `contact_id` referenced by an email or event must exist in the `contacts` array. Fails loud (non-zero exit, explicit list of dangling references) rather than silently dropping or ignoring bad references. This is a hard gate — no writer runs on unvalidated data.
@@ -584,7 +584,7 @@ Integration and end-to-end only. No unit tests unless separately requested.
 - **AI generation at runtime**: no Anthropic API integration in the CLI. Content generation is a manual, external step performed via Claude Code/Cowork (§2, Stage 0), decoupled from this codebase entirely.
 - **Templating engine for the custom email**: `--custom-email` accepts a fixed JSON descriptor plus a static HTML file. No variable substitution, no merge-field system.
 - **Trash-folder emptying**: reset operations expunge from INBOX/Sent/Drafts only. If the backend routes expunged messages to a server-side Trash, this is accepted (§10 item 1) and not handled.
-- **Non-English content generation / localization**: the dataset schema and generation prompt assume English-language business correspondence.
+- **Localization beyond EN/ES/FR**: the generation prompt supports English, Spanish, and French content via its `LANGUAGE` parameter. Other languages, and localization of CLI output or schema keys, are out of scope.
 - **Windows support for the credentials-file permission check**: the `600`-permissions enforcement (NFR-2) assumes POSIX file permissions.
 - **Recurring calendar events**: the event schema (§5.1) supports single-instance events only. No RRULE-equivalent fields or recurrence handling.
 

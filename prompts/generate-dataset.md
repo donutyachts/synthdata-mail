@@ -1,6 +1,6 @@
 # Generate Dataset — synthdata-mail Stage 0 Prompt Template
 
-This is not code — it's a prompt you run manually in Claude Code or Claude Cowork to produce `dataset.json`. Copy the prompt below, fill in the two bracketed parameters, and run it. Save the output as `dataset.json` and validate it with `synthdata-mail validate --dataset dataset.json` before using it.
+This is not code — it's a prompt you run manually in Claude Code or Claude Cowork to produce `dataset.json`. Copy the prompt below, fill in the three bracketed parameters, and run it. Save the output as `dataset.json` and validate it with `synthdata-mail validate --dataset dataset.json` before using it.
 
 ---
 
@@ -8,6 +8,7 @@ This is not code — it's a prompt you run manually in Claude Code or Claude Cow
 
 - **VOLUME_TIER**: `light`, `medium`, or `heavy`
 - **BUSINESS_PERSONA**: a short description, e.g. "generic small business, mixed clients and vendors" or "professional services firm (law/consulting/accounting)"
+- **LANGUAGE**: `EN` (English), `ES` (Spanish), or `FR` (French) — the language all generated content is written in
 
 ---
 
@@ -19,6 +20,7 @@ Generate a synthetic dataset for populating a demo email account. Output ONLY a 
 PARAMETERS:
 - Volume tier: {VOLUME_TIER}
 - Business persona: {BUSINESS_PERSONA}
+- Language: {LANGUAGE}
 - Generation reference time: use the current date/time as "now" for all relative date calculations below.
 
 VOLUME TARGETS BY TIER (follow exactly):
@@ -74,6 +76,14 @@ SCHEMA — the output must be a single JSON object with this exact shape:
     }
   ]
 }
+
+LANGUAGE RULES (applies to the Language parameter above):
+- EN = English, ES = Spanish, FR = French.
+- Write ALL human-readable content in the specified language: business_name, business_type, company names, email subjects and bodies, event titles and descriptions.
+- Make the persona and contacts culturally plausible for that language: names, company names, phone number formats, and email domains should fit a business operating in a region where that language is spoken (e.g. ES → Spain or Latin America, FR → France, Belgium, Switzerland, or Quebec). Pick one region and stay consistent across the dataset.
+- Use natural, native-sounding business correspondence conventions for the language (greetings, sign-offs, formality level such as tú/usted or tu/vous appropriate to the relationship) — not literal translations of English phrasing.
+- Reply subjects should use the conventional prefix for the language ("Re:" is acceptable in all three; "RE:" is also common in ES/FR).
+- JSON keys and enumerated values stay in English exactly as shown in the schema ("inbox", "sent", "drafts", "incoming", "outgoing", and the role values "client", "vendor", "internal", "partner"). Only free-text values are localized.
 
 DATE RULES (do not skip these — they are load-bearing, not decorative):
 - Emails: every timestamp must be BEFORE the generation reference time (past-only, no future-dated emails, ever — a received or sent message cannot be dated in the future). Lookback window: 90 days back from now for light/medium tiers, 180 days back for heavy tier. Distribution should skew recent — put noticeably more emails in the last 2-3 weeks than in the earlier part of the window, tapering off further back. Do not spread emails evenly/uniformly across the window; a real inbox is denser near "now."
