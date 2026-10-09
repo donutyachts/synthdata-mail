@@ -308,7 +308,7 @@ The contract between Stage 0 (manual AI generation) and the deterministic CLI.
           "full_name": { "type": "string" },
           "email": { "type": "string", "format": "email" },
           "company": { "type": "string" },
-          "role": { "type": "string", "description": "e.g. client, vendor, internal, partner" },
+          "role": { "type": "string", "description": "Job title, in the dataset language (e.g. Purchasing Manager). Rendered in the contact's signature and as the vCard TITLE." },
           "phone": { "type": "string" }
         }
       }
