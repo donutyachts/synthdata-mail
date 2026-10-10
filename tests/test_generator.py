@@ -47,6 +47,22 @@ class TestContactsVcf:
         assert "Acme Corp" in content
         assert "+1-555-0101" in content
 
+    @pytest.mark.parametrize(
+        "full_name, given, family",
+        [
+            ("Alice Smith", "Alice", "Smith"),
+            ("Lucía Ferrer Navarro", "Lucía", "Ferrer Navarro"),
+            ("Madonna", "", "Madonna"),
+        ],
+    )
+    def test_vcf_name_split(self, tmp_path, full_name, given, family):
+        out = tmp_path / "contacts.vcf"
+        contact = {"contact_id": "c1", "full_name": full_name, "email": "x@example.com"}
+        write_contacts_vcf([contact], out)
+        card = next(vobject.readComponents(out.read_text()))
+        assert card.n.value.given == given
+        assert card.n.value.family == family
+
     def test_idempotent_overwrite(self, tmp_path):
         data = load_valid()
         out = tmp_path / "contacts.vcf"
@@ -94,6 +110,21 @@ class TestEventsIcs:
         # ev1 has c1 (alice) and c2 (bob) as attendees
         assert "alice@example.com" in content
         assert "bob@vendor.com" in content
+
+    def test_ics_offset_times_written_as_utc(self, tmp_path):
+        out = tmp_path / "events.ics"
+        event = {
+            "event_id": "v1",
+            "title": "Firma",
+            "start": "2026-10-16T09:30:00+02:00",
+            "end": "2026-10-16T10:30:00+02:00",
+            "attendee_contact_ids": [],
+        }
+        write_events_ics([event], [], out)
+        content = out.read_bytes().decode()
+        assert "TZID" not in content
+        assert "DTSTART:20261016T073000Z" in content
+        assert "DTEND:20261016T083000Z" in content
 
     def test_idempotent_overwrite(self, tmp_path):
         data = load_valid()

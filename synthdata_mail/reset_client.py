@@ -48,7 +48,7 @@ def reset_by_batch_id(
             # Search for messages with batch header
             try:
                 messages = list(mb.fetch(
-                    imap_tools.AND(header=[f"X-WM8-Seed-Batch {batch_id}"]),
+                    imap_tools.AND(header=[imap_tools.H("X-WM8-Seed-Batch", batch_id)]),
                     mark_seen=False,
                     bulk=True,
                 ))

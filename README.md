@@ -64,6 +64,7 @@ If you'd rather not manage a file at all, omit `--creds-file` and the tool will 
 Run the content-generation prompt (see `prompts/generate-dataset.md` in this repo) through Claude Code or Cowork, specifying:
 - Volume tier: `light` (~15 contacts / ~20 events / 50 emails), `medium` (~30 / ~50 / 100), or `heavy` (~50 / ~100 / 200)
 - Business persona: e.g., "generic small business, mixed clients and vendors"
+- Language: `EN` (English), `ES` (Spanish), or `FR` (French)
 
 Save the output as `dataset.json`.
 
