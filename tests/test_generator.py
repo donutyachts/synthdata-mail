@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 
@@ -5,7 +6,12 @@ import pytest
 import vobject
 from icalendar import Calendar
 
-from synthdata_mail.generator import write_contacts_vcf, write_events_ics
+from synthdata_mail.generator import (
+    CSV_COLUMNS,
+    write_contacts_csv,
+    write_contacts_vcf,
+    write_events_ics,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -77,6 +83,52 @@ class TestContactsVcf:
         out = tmp_path / "nested" / "dir" / "contacts.vcf"
         write_contacts_vcf(data["contacts"], out)
         assert out.exists()
+
+
+class TestContactsCsv:
+    def test_writes_header_and_all_contacts(self, tmp_path):
+        data = load_valid()
+        out = tmp_path / "contacts.csv"
+        n = write_contacts_csv(data["contacts"], out)
+        with open(out, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        assert n == len(data["contacts"]) == len(rows)
+        assert list(rows[0].keys()) == CSV_COLUMNS
+        assert {r["E-mail Address"] for r in rows} == {c["email"] for c in data["contacts"]}
+
+    def test_row_fields(self, tmp_path):
+        out = tmp_path / "contacts.csv"
+        contact = {
+            "contact_id": "c1",
+            "full_name": "Lucía Ferrer Navarro",
+            "email": "lucia@example.es",
+            "company": "Restaurante La Llotja, S.L.",
+            "role": "Directora de sala",
+            "phone": "+34 963 512 774",
+        }
+        write_contacts_csv([contact], out)
+        with open(out, newline="", encoding="utf-8") as f:
+            row = next(csv.DictReader(f))
+        assert row == {
+            "First Name": "Lucía",
+            "Last Name": "Ferrer Navarro",
+            "Display Name": "Lucía Ferrer Navarro",
+            "E-mail Address": "lucia@example.es",
+            "Company": "Restaurante La Llotja, S.L.",
+            "Job Title": "Directora de sala",
+            "Business Phone": "+34 963 512 774",
+        }
+
+    def test_optional_fields_blank(self, tmp_path):
+        out = tmp_path / "contacts.csv"
+        contact = {"contact_id": "c1", "full_name": "Madonna", "email": "m@example.com", "role": "Singer"}
+        write_contacts_csv([contact], out)
+        with open(out, newline="", encoding="utf-8") as f:
+            row = next(csv.DictReader(f))
+        assert row["First Name"] == ""
+        assert row["Last Name"] == "Madonna"
+        assert row["Company"] == ""
+        assert row["Business Phone"] == ""
 
 
 class TestEventsIcs:

@@ -10,8 +10,8 @@ Demo/test webmail accounts provision empty. An empty inbox makes AI features (wh
 ## How it works (three stages)
 
 1. **Generate content** (manual, outside this tool) — you run a documented prompt in Claude Code or Claude Cowork, which produces a single `dataset.json` file containing a persona, contacts, emails, and events, all cross-referenced. There's no API key requirement here — this step doesn't call any API from this tool, you just interact with Claude Code/Cowork directly.
-2. **Turn that into files and mailbox content** (this tool) — validate the dataset, write `.vcf`/`.ics` files for manual import, and seed the mailbox directly over IMAP.
-3. **Import contacts/calendar manually** — bulk-upload the generated `.vcf` and `.ics` files through the target webmail's own UI. This tool does not write to CalDAV/CardDAV (see spec §9).
+2. **Turn that into files and mailbox content** (this tool) — validate the dataset, write `.vcf`/`.csv`/`.ics` files for manual import, and seed the mailbox directly over IMAP.
+3. **Import contacts/calendar manually** — bulk-upload the generated contacts (`.vcf` or `.csv`) and `.ics` files through the target webmail's own UI. This tool does not write to CalDAV/CardDAV (see spec §9).
 
 Why the split: WM8 (and most webmail products) don't expose a bulk-import API for contacts/calendar, but they do support IMAP for mail. So mail gets seeded directly; contacts/calendar get generated as standard files you import by hand.
 
@@ -82,7 +82,7 @@ Catches schema errors and dangling references (e.g., an email pointing to a cont
 synthdata-mail generate --dataset dataset.json --output-dir ./output/
 ```
 
-Produces `output/contacts.vcf` and `output/events.ics`. Import both into the target webmail through its own UI (bulk import / add account features — see that product's documentation).
+Produces `output/contacts.vcf`, `output/contacts.csv`, and `output/events.ics`. The two contacts files hold the same contacts; use whichever format the webmail's importer accepts (the CSV uses Outlook-style column names). Import contacts and events into the target webmail through its own UI (bulk import / add account features — see that product's documentation).
 
 ### 4. Seed the mailbox
 
@@ -182,7 +182,7 @@ synthdata-mail/
 │   └── generate-dataset.md  # Stage 0 prompt template for Claude Code/Cowork
 ├── tests/
 │   └── fixtures/            # valid and invalid dataset.json fixtures
-├── output/                  # generated contacts.vcf, events.ics, welcome email
+├── output/                  # generated contacts.vcf/.csv, events.ics, welcome email
 ├── pyproject.toml
 ├── mailbox.creds            # gitignored — your IMAP credentials
 ├── dataset.json             # gitignored — generated synthetic dataset

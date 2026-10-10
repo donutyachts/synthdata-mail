@@ -46,6 +46,7 @@ class TestGenerateCommand:
         )
         assert result.exit_code == 0
         assert (tmp_path / "contacts.vcf").exists()
+        assert (tmp_path / "contacts.csv").exists()
         assert (tmp_path / "events.ics").exists()
 
     def test_contacts_vcf_parseable(self, runner, tmp_path):

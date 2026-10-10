@@ -137,9 +137,10 @@ This command can be run standalone or is invoked automatically as the first step
 **Behavior**:
 - Runs FR-1 validation first; aborts on failure.
 - Writes `contacts.vcf` — one vCard entry per contact, using `vobject`.
+- Writes `contacts.csv` — the same contacts, one row per contact, for webmail importers that only accept CSV. Columns use Outlook-style names: `First Name`, `Last Name`, `Display Name`, `E-mail Address`, `Company`, `Job Title` (from `role`), `Business Phone`. UTF-8, no BOM.
 - Writes `events.ics` — one `VEVENT` per event, attendees resolved from `contacts[]` by `contact_id`, using `icalendar`.
 
-**Output**: `<output-dir>/contacts.vcf`, `<output-dir>/events.ics`. No network activity. Idempotent — re-running overwrites prior output files without side effects elsewhere.
+**Output**: `<output-dir>/contacts.vcf`, `<output-dir>/contacts.csv`, `<output-dir>/events.ics`. No network activity. Idempotent — re-running overwrites prior output files without side effects elsewhere.
 
 **Note**: this command does not write emails anywhere. Email content lives only in `dataset.json` and is consumed exclusively by `seed` (FR-3), since there is no file-based import path for mail.
 
@@ -451,7 +452,7 @@ This tool has no external service API — no REST endpoints, no web server. "API
 
 **`synthdata-mail generate --dataset <path> [--output-dir <path>]`**
 - Default `--output-dir`: `./output/`
-- Exit 0: `contacts.vcf` and `events.ics` written.
+- Exit 0: `contacts.vcf`, `contacts.csv`, and `events.ics` written.
 - Exit 1: validation failed; no files written.
 
 **`synthdata-mail seed --dataset <path> --server <host> --username <email> [--custom-email <path-to-json>] [--batch-id <uuid>] [--delay-min <seconds>] [--delay-max <seconds>] [--cooldown-every <n>]`**
