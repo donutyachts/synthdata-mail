@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 
 from .credentials import CredentialError, load_credentials
-from .generator import write_contacts_vcf, write_events_ics
+from .generator import write_contacts_csv, write_contacts_vcf, write_events_ics
 from .history import log_run, read_history
 from .imap_client import seed_mailbox
 from .reset_client import reset_by_batch_id, wipe_all
@@ -45,7 +45,7 @@ def validate(dataset: str):
 @click.option("--dataset", required=True, help="Path to dataset.json")
 @click.option("--output-dir", default="./output", show_default=True, help="Output directory")
 def generate(dataset: str, output_dir: str):
-    """Generate contacts.vcf and events.ics from a validated dataset."""
+    """Generate contacts.vcf, contacts.csv and events.ics from a validated dataset."""
     data, errors = validate_and_report(dataset)
     if errors:
         for err in errors:
@@ -54,9 +54,11 @@ def generate(dataset: str, output_dir: str):
 
     out = Path(output_dir)
     n_contacts = write_contacts_vcf(data["contacts"], out / "contacts.vcf")
+    write_contacts_csv(data["contacts"], out / "contacts.csv")
     n_events = write_events_ics(data["events"], data["contacts"], out / "events.ics")
 
     click.echo(f"Written: {out / 'contacts.vcf'} ({n_contacts} contacts)")
+    click.echo(f"Written: {out / 'contacts.csv'} ({n_contacts} contacts)")
     click.echo(f"Written: {out / 'events.ics'} ({n_events} events)")
 
 
