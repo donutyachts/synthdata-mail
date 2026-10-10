@@ -13,11 +13,13 @@ def write_contacts_vcf(contacts: list[dict], output_path: Path) -> int:
 
         card.add("fn").value = contact["full_name"]
 
-        # Split full_name into family/given best-effort
-        parts = contact["full_name"].rsplit(" ", 1)
+        # Split full_name into given/family best-effort: first word is the
+        # given name, the rest the family name, so Spanish double surnames
+        # ("Lucía Ferrer Navarro") stay together.
+        parts = contact["full_name"].split(" ", 1)
         n = card.add("n")
         n.value = vobject.vcard.Name(
-            family=parts[-1] if len(parts) > 1 else parts[0],
+            family=parts[1] if len(parts) > 1 else parts[0],
             given=parts[0] if len(parts) > 1 else "",
         )
 
@@ -65,8 +67,10 @@ def write_events_ics(
         vevent = Event()
         vevent.add("uid", ev["event_id"])
         vevent.add("summary", ev["title"])
-        vevent.add("dtstart", _parse_dt(ev["start"]))
-        vevent.add("dtend", _parse_dt(ev["end"]))
+        # Write UTC ("...Z"): fixed-offset datetimes otherwise serialize as
+        # TZID="UTC+02:00" with no matching VTIMEZONE, which clients misread.
+        vevent.add("dtstart", _parse_dt(ev["start"]).astimezone(timezone.utc))
+        vevent.add("dtend", _parse_dt(ev["end"]).astimezone(timezone.utc))
         vevent.add("dtstamp", datetime.now(timezone.utc))
 
         if ev.get("description"):
