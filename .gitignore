@@ -9,3 +9,5 @@ output/
 history.jsonl
 *.creds
 dataset.json
+dataset-*.json
+.DS_Store
